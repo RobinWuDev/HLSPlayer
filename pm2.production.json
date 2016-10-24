@@ -1,0 +1,19 @@
+{
+  "apps" : [{
+    "name"               : "robinwu.com",
+    "script"             : "app.js",
+    "env": {
+      "COMMON_VARIABLE": "true",
+      "NODE_ENV": "production",
+      "BABEL_DISABLE_CACHE": 1
+    },
+    "exec_interpreter"   : "node",
+    "node_args"          : "--harmony",
+    "exec_mode"          : "cluster_mode",
+    "instances"          : 1,
+    "log_date_format"    : "YYYY-MM-DD HH:mm Z",
+    "max_memory_restart" : "700M",
+    "merge_logs"         : true,
+    "watch"              : true
+  }]
+}
