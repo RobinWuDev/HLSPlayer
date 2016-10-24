@@ -1,7 +1,7 @@
 {
   "apps" : [{
     "name"               : "hls-player",
-    "script"             : "app.js",
+    "script"             : "index.js",
     "env": {
       "COMMON_VARIABLE": "true",
       "NODE_ENV": "production",
