@@ -1,6 +1,6 @@
 {
   "apps" : [{
-    "name"               : "robinwu.com",
+    "name"               : "hls-player",
     "script"             : "app.js",
     "env": {
       "COMMON_VARIABLE": "true",

@@ -4,11 +4,13 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "NODE_ENV=dev node index.js",
+    "release": "./node_modules/.bin/pm2 startOrGracefulReload pm2.production.json"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "redis": "^2.6.2"
+    "redis": "^2.6.2",
+    "pm2": "^1.1.3"
   }
 }

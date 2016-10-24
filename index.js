@@ -11,7 +11,28 @@ const spawn = require('child_process').spawn;
 const connect = Redis.createClient('6379','127.0.0.1');
 const MUSIC_IDS = "rb_music_ids";
 
-const DIR = "/Users/Robin/Documents/Product/robinwu.com/submodule/file/public/";
+let isDev =process.env.NODE_ENV == "dev";
+let DIR = "";
+if(isDev) {
+    DIR = "/Users/Robin/Documents/Product/robinwu.com/submodule/file/public/";
+} else {
+    DIR = "/mnt/robinwu.com/submodule/file/public/";
+}
+
+let Domain = "";
+if(isDev) {
+    Domain = "http://file.robinwu1.com:3000/";
+} else {
+    Domain = "http://file.robinwu.com/";
+}
+
+let FFmpegPath = "";
+if(isDev) {
+    FFmpegPath = "/usr/local/bin/ffmpeg";
+} else {
+    FFmpegPath = "/usr/bin/ffmpeg";
+}
+
 const m3u8File = "index.m3u8";
 const outputFile = "%03d.ts";
 
@@ -69,7 +90,7 @@ function clipMusic() {
             let outputFile = Path.join(outDir,"%03d.ts");
 
             console.log("params:",inputFile,m3u8File,outputFile);
-            let ffmpeg = spawn("/usr/local/bin/ffmpeg",["-i",inputFile,'-acodec','aac',"-f",'segment',
+            let ffmpeg = spawn(FFmpegPath,["-i",inputFile,'-acodec','aac',"-f",'segment',
                 '-segment_time',"7",'-segment_list',m3u8File,outputFile]);
 
             ffmpeg.stdout.on('data', function (data) {
@@ -136,7 +157,7 @@ function play() {
             if(item) {
                 let list = item.split(",");
                 content = content + list[0] + ",\n";
-                content = content + "http://file.robinwu1.com:3000/hls/" + list[1] + "\n";
+                content = content + Domain + "hls/" + list[1] + "\n";
                 index++;
             }
             if(i == 2) {
@@ -157,5 +178,5 @@ function play() {
 
 }
 
-// clipMusic();
+clipMusic();
 play();
