@@ -151,7 +151,7 @@ function play() {
     let content = "#EXTM3U\n" +
     "#EXT-X-VERSION:3\n" +
     "#EXT-X-MEDIA-SEQUENCE:" + index + "\n" +
-    "#EXT-X-TARGETDURATION:18\n"+
+    "#EXT-X-TARGETDURATION:10\n"+
     "#QT-BITRATE:24\n";
 
     for(let i = 0;i<3;i++) {
@@ -168,7 +168,7 @@ function play() {
                     FS.writeFile(playListM3u8, content, (err) => {
                         if (err) throw err;
                         console.log('It\'s saved!');
-                        setTimeout(play,15 * 1000);
+                        setTimeout(play,10 * 1000);
                     });
                 } else {
                     setTimeout(play,1000);
