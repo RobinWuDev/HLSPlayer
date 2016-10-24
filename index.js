@@ -168,7 +168,7 @@ function play() {
                     FS.writeFile(playListM3u8, content, (err) => {
                         if (err) throw err;
                         console.log('It\'s saved!');
-                        setTimeout(play,10 * 1000);
+                        setTimeout(play,15 * 1000);
                     });
                 } else {
                     setTimeout(play,1000);
