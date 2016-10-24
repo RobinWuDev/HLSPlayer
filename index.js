@@ -85,13 +85,15 @@ function clipMusic() {
                 setTimeout(clipMusic,1000);
                 return;
             } else {
-                FS.mkdirSync(outDir);
+                if(!FS.existsSync(outDir)){
+                    FS.mkdirSync(outDir);
+                }
             }
             let outputFile = Path.join(outDir,"%03d.ts");
 
             console.log("params:",inputFile,m3u8File,outputFile);
             let ffmpeg = spawn(FFmpegPath,["-i",inputFile,'-acodec','aac',"-f",'segment',
-                '-segment_time',"7",'-segment_list',m3u8File,outputFile]);
+                '-segment_time',"7","-strict","-2",'-segment_list',m3u8File,outputFile]);
 
             ffmpeg.stdout.on('data', function (data) {
                 console.log('standard output:\n' + data);
