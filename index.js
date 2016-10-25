@@ -85,29 +85,22 @@ function loadPreList() {
                     return;
                 }
                 musicInfo.id = item.replace("rb_music:","");
-                clipMusic(musicInfo,false);
+                clipMusic(musicInfo);
             });
         } else {
-            rand(function (code, musicInfo) {
-                console.log("rand get music:",musicInfo);
-                if(code == 0) {
-                    clipMusic(musicInfo,true);
-                } else {
-                    clipMusicFail("rand fail");
-                }
-            })
+            setTimeout(loadPreList,1000);
         }
     });
 }
 
-function clipMusic(musicInfo,isrand) {
+function clipMusic(musicInfo) {
     console.log('get music:',musicInfo.id);
     let inputFile = musicInfo.url.replace("http://file.robinwu.com/",DIR);
     let outDir = Path.join(DIR,"hls",musicInfo.id);
 
     let m3u8File = Path.join(outDir,"index.m3u8");
     if(FS.existsSync(m3u8File)) {
-        readPlayList(musicInfo,isrand);
+        readPlayList(musicInfo);
     } else {
         if(!FS.existsSync(outDir)){
             FS.mkdirSync(outDir);
@@ -129,7 +122,7 @@ function clipMusic(musicInfo,isrand) {
         ffmpeg.on('exit', function (code, signal) {
             console.log("ffmpeg exit:",code);
             if(code == 0) {
-                readPlayList(musicInfo,isrand);
+                readPlayList(musicInfo);
             } else {
                 setTimeout(loadPreList,1000);
             }
@@ -137,7 +130,7 @@ function clipMusic(musicInfo,isrand) {
     }
 }
 
-function readPlayList(musicInfo,isrand) {
+function readPlayList(musicInfo) {
     let dir = Path.join(DIR,"hls",musicInfo.id);
     let m3u8File = Path.join(dir,"index.m3u8");
     if(FS.existsSync(m3u8File)) {
@@ -150,14 +143,11 @@ function readPlayList(musicInfo,isrand) {
                         i++;
                         let fileName = lines[i];
                         let content = line + Path.join(musicInfo.id,fileName);
-                        if(isrand) {
-                            content += ";rand";
-                        }
                         connect.rpush(PlayList,content);
                     }
                     i++;
                 }
-                setTimeout(loadPreList,1000 * 3 * 60);
+                setTimeout(loadPreList,1000);
             } else {
                 console.log("read file error:",m3u8File,err);
             }
@@ -180,7 +170,6 @@ function play() {
     for(let i = 0;i<3;i++) {
         connect.lpop(PlayList,function (listName, item) {
             if(item) {
-                item = item.replace(";rand","");
                 let list = item.split(",");
                 content = content + list[0] + ",\n";
                 content = content + Domain + "hls/" + list[1] + "\n";
