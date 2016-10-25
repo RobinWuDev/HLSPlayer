@@ -4,6 +4,7 @@
 const Redis = require('redis');
 const Path = require("path");
 const FS = require("fs");
+const PlayMusic = "rb_play_music";
 const PlayList = "rb_play_list";
 
 const spawn = require('child_process').spawn;
@@ -38,7 +39,7 @@ const outputFile = "%03d.ts";
 
 function clipMusicFail(err) {
     console.log("err:",err);
-    setTimeout(clipMusic,1000);
+    setTimeout(loadPreList,1000);
 }
 
 function playMusicFail(err) {
@@ -74,50 +75,69 @@ function rand(callBack) {
 
 }
 
-function clipMusic() {
-    rand(function (code, musicInfo) {
-        if(code == 0) {
-            let inputFile = musicInfo.url.replace("http://file.robinwu.com/",DIR);
-            let outDir = Path.join(DIR,"hls",musicInfo.id);
-
-            let m3u8File = Path.join(outDir,"index.m3u8");
-            if(FS.existsSync(m3u8File)) {
-                setTimeout(clipMusic,1000);
-                return;
-            } else {
-                if(!FS.existsSync(outDir)){
-                    FS.mkdirSync(outDir);
+function loadPreList() {
+    connect.lpop(PlayMusic,function (listName, item) {
+        if(item) {
+            connect.hgetall(item,function (err, musicInfo) {
+                console.log("prelist get music:",musicInfo);
+                if(err) {
+                    clipMusicFail(err);
+                    return;
                 }
-            }
-            let outputFile = Path.join(outDir,"%03d.ts");
-
-            console.log("params:",inputFile,m3u8File,outputFile);
-            let ffmpeg = spawn(FFmpegPath,["-i",inputFile,'-acodec','aac',"-f",'segment',
-                '-segment_time',"7","-strict","-2",'-segment_list',m3u8File,outputFile]);
-
-            ffmpeg.stdout.on('data', function (data) {
-                console.log('standard output:\n' + data);
-            });
-
-            ffmpeg.stderr.on('data', function (data) {
-                console.log('standard error output:\n' + data);
-            });
-
-            ffmpeg.on('exit', function (code, signal) {
-                console.log("ffmpeg exit:",code);
-                if(code == 0) {
-                    readPlayList(musicInfo);
-                } else {
-                    setTimeout(clipMusic,1000);
-                }
+                musicInfo.id = item.replace("rb_music:","");
+                clipMusic(musicInfo,false);
             });
         } else {
-            clipMusicFail(musicInfo);
+            rand(function (code, musicInfo) {
+                console.log("rand get music:",musicInfo);
+                if(code == 0) {
+                    clipMusic(musicInfo,true);
+                } else {
+                    clipMusicFail("rand fail");
+                }
+            })
         }
     });
 }
 
-function readPlayList(musicInfo) {
+function clipMusic(musicInfo,isrand) {
+    console.log('get music:',musicInfo.id);
+    let inputFile = musicInfo.url.replace("http://file.robinwu.com/",DIR);
+    let outDir = Path.join(DIR,"hls",musicInfo.id);
+
+    let m3u8File = Path.join(outDir,"index.m3u8");
+    if(FS.existsSync(m3u8File)) {
+        readPlayList(musicInfo,isrand);
+    } else {
+        if(!FS.existsSync(outDir)){
+            FS.mkdirSync(outDir);
+        }
+        let outputFile = Path.join(outDir,"%03d.ts");
+
+        console.log("params:",inputFile,m3u8File,outputFile);
+        let ffmpeg = spawn(FFmpegPath,["-i",inputFile,'-acodec','aac',"-f",'segment',
+            '-segment_time',"7","-strict","-2",'-segment_list',m3u8File,outputFile]);
+
+        ffmpeg.stdout.on('data', function (data) {
+            console.log('standard output:\n' + data);
+        });
+
+        ffmpeg.stderr.on('data', function (data) {
+            console.log('standard error output:\n' + data);
+        });
+
+        ffmpeg.on('exit', function (code, signal) {
+            console.log("ffmpeg exit:",code);
+            if(code == 0) {
+                readPlayList(musicInfo,isrand);
+            } else {
+                setTimeout(loadPreList,1000);
+            }
+        });
+    }
+}
+
+function readPlayList(musicInfo,isrand) {
     let dir = Path.join(DIR,"hls",musicInfo.id);
     let m3u8File = Path.join(dir,"index.m3u8");
     if(FS.existsSync(m3u8File)) {
@@ -130,11 +150,14 @@ function readPlayList(musicInfo) {
                         i++;
                         let fileName = lines[i];
                         let content = line + Path.join(musicInfo.id,fileName);
+                        if(isrand) {
+                            content += ";rand";
+                        }
                         connect.rpush(PlayList,content);
                     }
                     i++;
                 }
-                setTimeout(clipMusic,1000);
+                setTimeout(loadPreList,1000 * 3 * 60);
             } else {
                 console.log("read file error:",m3u8File,err);
             }
@@ -149,14 +172,15 @@ function play() {
     let playListM3u8 = Path.join(DIR,"hls","index.m3u8");
 
     let content = "#EXTM3U\n" +
-    "#EXT-X-VERSION:3\n" +
-    "#EXT-X-MEDIA-SEQUENCE:" + index + "\n" +
-    "#EXT-X-TARGETDURATION:10\n"+
-    "#QT-BITRATE:24\n";
+        "#EXT-X-VERSION:3\n" +
+        "#EXT-X-MEDIA-SEQUENCE:" + index + "\n" +
+        "#EXT-X-TARGETDURATION:10\n"+
+        "#QT-BITRATE:24\n";
 
     for(let i = 0;i<3;i++) {
         connect.lpop(PlayList,function (listName, item) {
             if(item) {
+                item = item.replace(";rand","");
                 let list = item.split(",");
                 content = content + list[0] + ",\n";
                 content = content + Domain + "hls/" + list[1] + "\n";
@@ -180,5 +204,5 @@ function play() {
 
 }
 
-clipMusic();
+loadPreList();
 play();
